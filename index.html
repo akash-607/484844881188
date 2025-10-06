@@ -261,6 +261,7 @@
 <body>
   <div class="topbar">
     <!-- "Pre" button -->
+  <button class="topbtn" id="get-btn">get</button>
   <button class="topbtn" id="res-btn">Res</button>
   <!-- "Pre" button -->
   <button class="topbtn" id="pre-btn">Pre</button>
@@ -606,6 +607,7 @@
     const modal2 = document.getElementById("myModal2");
     const preBtn = document.getElementById("pre-btn");
     const resBtn = document.getElementById("res-btn");
+    const getBtn = document.getElementById("get-btn");
     const newBtn = document.getElementById("new-btn");
     const closeModal = document.getElementsByClassName("close")[0];
     const closeModal2 = document.getElementsByClassName("close")[1];
@@ -617,3 +619,270 @@
 
     preBtn.onclick = function() {
       document.getElementById("chat-input").value=previous;
+    };
+    resBtn.onclick = function() {
+      if(textContent!=""){
+        result_text.innerHTML=convertToHTML(textContent);
+        modal2.style.display = "flex";
+      }
+    };
+    getBtn.onclick = function() {
+     
+  const dbName = "ChatDB";
+  const storeName = "chats"; // Object store name
+
+  const request = indexedDB.open(dbName);
+
+  request.onerror = function(event) {
+    console.error("Database error:", event.target.error);
+  };
+
+  request.onsuccess = function(event) {
+    const db = event.target.result;
+    const transaction = db.transaction([storeName], "readonly");
+    const objectStore = transaction.objectStore(storeName);
+
+    const allData = [];
+    const cursorRequest = objectStore.openCursor();
+
+    cursorRequest.onerror = function(event) {
+      console.error("Cursor error:", event.target.error);
+    };
+
+    cursorRequest.onsuccess = function(event) {
+      const cursor = event.target.result;
+      if (cursor) {
+        allData.push(cursor.value);
+        cursor.continue();
+      } else {
+        // Done collecting data
+        const jsonData = JSON.stringify(allData, null, 2);
+        const blob = new Blob([jsonData], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "ChatDB_export.json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        console.log("Data exported successfully.");
+      }
+    };
+  };
+
+    };
+
+    newBtn.onclick = function() {
+      editingItemId = null; // Reset for new add
+      modalTitleInput.value = "";
+      modalPromptInput.value = "";
+      addBtnModal.textContent = "Add";
+      modal.style.display = "flex";
+    };
+    
+    
+    
+    closeModal.onclick = function() {
+      modal.style.display = "none";
+    };
+    closeModal2.onclick = function() {
+      modal2.style.display = "none";
+    };
+
+     
+    window.onclick = function(event) {
+      if (event.target === modal) {
+        modal.style.display = "none";
+      }
+    };
+    
+    copy__click.onclick = function copyToClipboard() {  
+    const tempInput = document.createElement("textarea");  
+    tempInput.value = textContent;  
+    document.body.appendChild(tempInput);  
+    tempInput.select();  
+    document.execCommand("copy");  
+    document.body.removeChild(tempInput);  
+
+    copy__click.textContent = "copied✅";  
+    setTimeout(() => {  
+        copy__click.textContent = "copy";  
+    }, 4000);  
+};
+
+    // ---------------------------
+    // Add/Edit Chat Item Functionality in Modal
+    // ---------------------------
+    addBtnModal.onclick = function() {
+      const title = modalTitleInput.value.trim();
+      const prompt = modalPromptInput.value.trim();
+
+      if (!title || !prompt) {
+        alert("Please fill in both fields");
+        return;
+      }
+
+      if (editingItemId) {
+        // Edit existing item
+        const transaction = db.transaction(["chats"], "readwrite");
+        const objectStore = transaction.objectStore("chats");
+        const updateRequest = objectStore.put({ id: editingItemId, title: title, prompt: prompt });
+
+        updateRequest.onsuccess = function(event) {
+          loadChatItems(); // Reload list to include the updated item
+          modal.style.display = "none";
+          editingItemId = null;
+        };
+
+        updateRequest.onerror = function(event) {
+          console.error("Error updating item:", event.target.error);
+        };
+      } else {
+        // Add new item
+        const transaction = db.transaction(["chats"], "readwrite");
+        const objectStore = transaction.objectStore("chats");
+        const newItem = { title, prompt };
+        const addRequest = objectStore.add(newItem);
+
+        addRequest.onsuccess = function(event) {
+          // If this is the first item, set it as selected by default
+          if (selectedChatId === null) {
+            selectedChatId = event.target.result;
+          }
+          loadChatItems(); // Reload list to include the new item
+          modalTitleInput.value = "";
+          modalPromptInput.value = "";
+          modal.style.display = "none";
+        };
+
+        addRequest.onerror = function(event) {
+          console.error("Error adding item:", event.target.error);
+        };
+      }
+    };
+
+    // ---------------------------
+    // Edit Chat Item Function
+    // ---------------------------
+    function editChatItem(itemId) {
+      editingItemId = itemId;
+      const itemData = chatData[itemId];
+      if (itemData) {
+        modalTitleInput.value = itemData.title;
+        modalPromptInput.value = itemData.prompt;
+        addBtnModal.textContent = "Save Changes";
+        modal.style.display = "flex";
+      }
+    }
+
+    // ---------------------------
+    // Delete Chat Item Function
+    // ---------------------------
+    function deleteChatItem(itemId) {
+      const transaction = db.transaction(["chats"], "readwrite");
+      const objectStore = transaction.objectStore("chats");
+      const deleteRequest = objectStore.delete(itemId);
+
+      deleteRequest.onsuccess = function() {
+        loadChatItems(); // Reload list to reflect deletion
+        if (selectedChatId === itemId) {
+          selectedChatId = null; // Deselect if deleted item was selected
+          updateSelectedUI(); // Update UI to reflect deselection
+        }
+      };
+
+      deleteRequest.onerror = function(event) {
+        console.error("Error deleting item:", event.target.error);
+      };
+    }
+    async function apilogic(message,selectedPrompt,selectedChatId){
+      // API logic start
+
+    // API URL and Key
+    const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBbZ3WpKb50y1SE2Y9GWmU980bKqczr6zw";
+
+    // Request Payload
+    const payload = {
+        contents: [{
+            parts: [{ text: `${selectedPrompt.replace("€",message)}` }]
+        }]
+    };
+
+    try {
+        // Perform POST Request
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        const data = await response.json();
+        
+
+        // Extract the text content from the response
+        textContent = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No content found';
+        // alert(textContent);
+        result_text.innerHTML=convertToHTML(textContent);
+        // result_text.innerHTML=marked.parse(textContent);
+      //  console.log(marked.parse(textContent))
+        modal2.style.display = "flex";
+ 
+        if(selectedChatId!=1){
+        movetotop(selectedChatId);
+        }
+        
+    } catch (error) {
+        console.error("Error:", error);
+        alert("An error occurred while fetching the response.");
+    }
+    // api logic ends
+    }
+
+    // ---------------------------
+    // Send Button Functionality
+    // ---------------------------
+    document.getElementById("send-btn").onclick = async function() { // Mark the function as async
+    const message = document.getElementById("chat-input").value.trim();
+    
+     const selectedPrompt = chatData[selectedChatId] ? chatData[selectedChatId].prompt : "No prompt found";
+    
+    if (!message){
+      try {
+    const permission = await navigator.permissions.query({ name: 'clipboard-read' });
+    if (permission.state === 'granted' || permission.state === 'prompt') {
+       text1 = await navigator.clipboard.readText();
+        apilogic(text1,selectedPrompt,selectedChatId);
+   
+    } else {
+      alert("Clipboard permission not granted.");
+    }
+  } catch (err) {
+    console.error("Failed to access clipboard: ", err);
+    alert("Error: " + err.message);
+  }
+  return
+    }
+
+    // Retrieve the prompt from the cached chatData using selectedChatId
+   
+
+    
+
+    // Clear input after sending
+    previous = document.getElementById("chat-input").value;
+    document.getElementById("chat-input").value = "";
+    apilogic(message,selectedPrompt,selectedChatId);
+    
+    
+};
+  </script>
+</body>
+</html>
