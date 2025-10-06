@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mobile Chat App</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      background-color: black;
+      position: relative;
+      justify-content: center;
+    }
+    /* Chat container (main page) */
+    #chat-container {
+      
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+     
+    }
+    
+    /* code for bottom input */
+    .chat-input-bar-container { /* For positioning the bar */
+            
+           
+            display: flex;
+  
+            background-color: black;
+          
+            width: 100%;
+           
+            max-width: 700px; /* Max width for larger screens */
+        
+        }
+
+        .chat-input-bar {
+          margin: 8px 6px;
+          width: 100%;
+            display: flex;
+            align-items: flex-end; /* Aligns items to the bottom, good for a growing textarea */
+            padding: 5px 6px;
+            background-color: #202123; /* Main background color of the input bar */
+            border-radius: 28px;
+            border: 1px solid #fff;  /* Border color */
+                 /* Rounded pill shape */
+             
+        }
+        .chat-input-bar textarea{
+         font-family: sans-serif;
+         font-size: 20px;
+        }
+        .icon-button {
+            background: none;
+            border: none;
+            color: #BDC1C6; /* Default icon color */
+            cursor: pointer;
+            padding: 0; /* Remove default button padding */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0; /* Prevent icons from shrinking */
+        }
+
+        #chat-input {
+            flex-grow: 1; /* Textarea takes available space */
+            background-color: transparent;
+            border: none;
+            outline: none;
+            color: #E8EAED; /* Text color inside textarea */
+            font-size: 16px;
+            font-weight: 500;
+            line-height: 1.4; /* (15px * 1.4 = 21px line height) */
+            resize: none; /* Disable manual resize by user */
+            overflow-y: hidden; /* Initially hide scrollbar */
+            padding: 10px 0; /* Vertical padding: (40px target - 21px line height) / 2 approx. */
+            margin: 0 8px; /* Horizontal margin for spacing */
+            box-sizing: border-box;
+            /* rows="1" attribute handles initial height along with padding and line-height */
+        }
+
+        #chat-input::placeholder {
+            color: #707579; /* Muted color for placeholder text */
+        }
+
+        .send-button {
+            background-color: #303134; /* Background of the send button circle */
+            border-radius: 50%; /* Makes it a circle */
+            width: 45px;
+            -webkit-tap-highlight-color: transparent; /* Removes the tap highlight on mobile (especially Chrome/Safari) */
+            margin: auto 0;
+            user-select: none;     /* Prevents text selection */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            height: 45px;
+            color: #E8EAED; /* Send icon color */
+        }
+
+        .send-button svg {
+            width: 20px; /* Size of the SVG icon */
+            height: 20px;
+        }
+
+        
+    /* code for bottom input finish */
+    
+    
+    
+    .chat-item {
+      background: #fff;
+      padding: 10px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      cursor: pointer;
+      display: flex; /* Use flexbox for item content */
+      justify-content: space-between; /* Distribute space between title and buttons */
+      align-items: center; /* Vertically align items in the center */
+    }
+    .chat-item.selected {
+      background: green;
+      color: #fff;
+    }
+    .chat-item-title {
+      flex-grow: 1; /* Allow title to take available space */
+    }
+    .chat-item-actions {
+      display: flex; /* Flex container for buttons */
+      gap: 5px; /* Spacing between buttons */
+    }
+    .action-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 5px;
+      border-radius: 3px;
+    }
+    
+    .highlight{
+      color: blue;
+    }
+    /* .result_text b{
+      color: blue;
+    } 
+    result_text{
+      font-size: 40px !important;
+    } */
+    .mtop{
+      padding-top: 50px;
+    }
+   
+    /* Input area at bottom */
+    #input-container {
+       display: flex;
+      padding: 10px;
+      background: #ddd; 
+    }
+    /* "New" button at top right */
+    .topbtn {
+      background: #28a745;
+      color: white;
+      border: none;
+      margin: 0 3px;
+      padding: 10px 15px;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    .topbar{
+      display: flex;
+      margin-right: 7px;
+      margin-bottom: 2px;
+      justify-content: right;
+      margin-top: 10px;
+    }
+   
+    /* Modal styling */
+    .modal {
+      display: none; 
+      position: fixed;
+      align-items: center;
+      z-index: 3;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.4);
+    }
+    
+    .modal-content textarea{
+      font-family: sans-serif;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+ 
+    .modal-content {
+      display: flex;
+      flex-direction: column;
+      background-color: #fff;
+      margin: 0 auto;
+      padding: 8px;
+      border: 2px solid #fff;
+      width: 100%;
+      max-width: 90vw;
+      height: fit-content;
+      max-height: 85vh;
+      border-radius: 8px;
+      position: relative;
+    }
+    #copy_click{
+      margin-top: 15px;
+    }
+    .container1{
+      overflow: scroll;
+    }
+    .close {
+      margin-left: auto;
+      color: #aaa;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close:hover {
+      color: #000;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    #add-btn,#copy_click {
+      width: 100%;
+      padding: 10px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    
+    #myModal2{
+     
+     background-color: rgba(0,0,0);
+          
+           
+    }
+  
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <!-- "Pre" button -->
+  <button class="topbtn" id="res-btn">Res</button>
+  <!-- "Pre" button -->
+  <button class="topbtn" id="pre-btn">Pre</button>
+  <!-- "New" button -->
+  <button class="topbtn" id="new-btn">New</button>
+  </div>
+  
+
+  <!-- Chat items container -->
+  <div id="chat-container">
+    <!-- Chat items will be loaded here from IndexedDB -->
+  </div>
+    <!-- input container  -->
+  
+  <div class="chat-input-bar-container">
+        <div class="chat-input-bar">
+            
+            <textarea id="chat-input" placeholder="Ask anything" rows="1"></textarea>
+            <button class="icon-button send-button" id="send-btn" aria-label="Send message">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+  
+  
+
+  <!-- Modal for adding/editing a chat item -->
+  <div id="myModal" class="modal">
+    <div class="modal-content">
+      <span id="modal-close" class="close">×</span>
+      <input type="text" id="modal-title" placeholder="Title">
+      <textarea id="modal-prompt" placeholder="Prompt" rows="5" cols="50"></textarea>
+      <button id="add-btn">Add</button>
+    </div>
+  </div>
+  <!-- Modal for displaying result -->
+  <div id="myModal2" class="modal">
+    <div class="modal-content mtop">
+      <span id="modal-close" class="close">×</span>
+     
+      <div class="container1">
+        
+      
+      <b id="result_text"></b>
+</div>
+      <button id="copy_click">Copy</button>
+    </div>
+  </div>
+  <!-- This is a comment
+  
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  -->
+  <script>
+    // --------input con code-------------
+    document.addEventListener('DOMContentLoaded', () => {
+            const textarea = document.getElementById('chat-input');
+            const maxRows = 5;
+
+            let initialEmptyHeight;      // Calculated height of the textarea when empty (1 row)
+            let singleLineContentHeight; // Calculated height of the content area for one line
+            let paddingTop, paddingBottom; // Store textarea's vertical padding
+
+            function measureTextareaParameters() {
+                const originalValue = textarea.value;
+                const originalScrollTop = textarea.scrollTop;
+                const originalHeightStyle = textarea.style.height;
+
+                // Measure padding
+                const computedStyle = getComputedStyle(textarea);
+                paddingTop = parseFloat(computedStyle.paddingTop);
+                paddingBottom = parseFloat(computedStyle.paddingBottom);
+
+                // Measure height when empty (should be 1 row based on CSS and rows attribute)
+                textarea.value = '';
+                textarea.rows = 1; // Ensure it's treated as 1 row
+                textarea.style.height = 'auto'; // Allow CSS/rows to determine height
+                initialEmptyHeight = textarea.scrollHeight; // This is total height for 1 line (content + padding)
+                
+                // Calculate content height of a single line
+                singleLineContentHeight = initialEmptyHeight - paddingTop - paddingBottom;
+
+                // Restore original state before this measurement
+                textarea.value = originalValue;
+                textarea.style.height = originalHeightStyle; // Restore explicitly set style, if any
+                textarea.scrollTop = originalScrollTop;
+
+                // Perform an initial adjustment based on current content (if any)
+                adjustTextareaHeight();
+            }
+            
+            // Measure parameters once the layout is stable
+            requestAnimationFrame(measureTextareaParameters);
+
+            function adjustTextareaHeight() {
+                // Ensure parameters are measured. If not, this function might be called too early.
+                if (typeof singleLineContentHeight === 'undefined') {
+                    // This might happen if 'input' fires before rAF completes.
+                    // A simple immediate auto-height can be a fallback.
+                    textarea.style.height = 'auto';
+                    textarea.style.height = textarea.scrollHeight + 'px';
+                    return;
+                }
+
+                const originalScrollTop = textarea.scrollTop; // Preserve scroll position
+                textarea.style.height = 'auto'; // Key step: reset height to content size to get correct scrollHeight
+
+                if (textarea.value === '') {
+                    // When cleared, shrink to the original single-row height
+                    textarea.style.height = `${initialEmptyHeight}px`;
+                    textarea.style.overflowY = 'hidden';
+                } else {
+                    const currentScrollHeight = textarea.scrollHeight;
+                    
+                    // Calculate max allowed height based on maxRows
+                    // (content height for maxRows) + vertical padding
+                    const maxAllowedHeight = (singleLineContentHeight * maxRows) + paddingTop + paddingBottom;
+
+                    if (currentScrollHeight > maxAllowedHeight) {
+                        textarea.style.height = `${maxAllowedHeight}px`;
+                        textarea.style.overflowY = 'auto'; // Show scrollbar
+                    } else {
+                        // Grow to fit content, but not less than the initial empty height
+                        textarea.style.height = `${Math.max(currentScrollHeight, initialEmptyHeight)}px`;
+                        textarea.style.overflowY = 'hidden'; // Hide scrollbar
+                    }
+                }
+                textarea.scrollTop = originalScrollTop; // Restore scroll position to prevent jumping
+            }
+
+            textarea.addEventListener('input', adjustTextareaHeight);
+
+            // Optional: Recalculate parameters and adjust on window resize
+            // Useful if font-size or other layout-affecting properties change
+            window.addEventListener('resize', () => {
+                requestAnimationFrame(measureTextareaParameters);
+            });
+        });
+    
+    // --------input code end---------
+    // ---------------------------
+    let previous ="";
+    let textContent="";
+    // ---------------------------
+    // IndexedDB Setup
+    // ---------------------------
+    let db;
+    let selectedChatId = null; // Variable to store selected chat item's id
+    // Global cache for chat data keyed by id
+    let chatData = {};
+    let editingItemId = null; // To store the ID of the item being edited
+    let message_input= document.getElementById("chat-input");
+    
+    const request = indexedDB.open("ChatDB", 1);
+
+    request.onerror = function(event) {
+      console.error("IndexedDB error:", event.target.errorCode);
+    };
+
+    request.onsuccess = function(event) {
+      db = event.target.result;
+      loadChatItems();
+    };
+
+    request.onupgradeneeded = function(event) {
+      db = event.target.result;
+      const objectStore = db.createObjectStore("chats", { keyPath: "id", autoIncrement: true });
+      objectStore.createIndex("title", "title", { unique: false });
+      objectStore.createIndex("prompt", "prompt", { unique: false });
+    };
+    
+    function convertToHTML(input) {
+  // Replace **...** with <p>...</p>
+  let htmlOutput = input.replace(/\*\*(.*?)\*\*/g, '<b class="highlight">$1</b>');
+  htmlOutput = htmlOutput.replace(/\*(.*?)\*/g, '<b class="highlight">$1</b>');
+  htmlOutput= htmlOutput.replaceAll('*','ℹ️');
+  htmlOutput= htmlOutput.replaceAll('\n','<br>');
+  return htmlOutput;
+}
+  
+  // code to move to top
+  
+  
+
+
+  
+    // Function to load chat items (display only title)
+    function loadChatItems() {
+      const chatContainer = document.getElementById('chat-container');
+      chatContainer.innerHTML = ''; // Clear current list
+
+      // Clear cached data
+      chatData = {};
+
+      const transaction = db.transaction(["chats"], "readonly");
+      const objectStore = transaction.objectStore("chats");
+      const items = [];
+
+      objectStore.openCursor().onsuccess = function(event) {
+        const cursor = event.target.result;
+        if (cursor) {
+          items.push(cursor.value);
+          cursor.continue();
+        } else {
+          // Once all items are fetched, display them and cache for later Use 
+          items.forEach((item, index) => {
+            chatData[item.id] = item; // Cache item
+
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'chat-item';
+            itemDiv.dataset.id = item.id; // store id in a data attribute
+
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'chat-item-title';
+            titleDiv.textContent = item.title;
+            itemDiv.appendChild(titleDiv);
+
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'chat-item-actions';
+
+            // Edit button
+            const editBtn = document.createElement('button');
+            editBtn.className = 'action-btn edit';
+            editBtn.textContent = 'Edit';
+            editBtn.addEventListener('click', (event) => {
+              event.stopPropagation(); // Prevent chat item selection
+              editChatItem(item.id);
+            });
+            actionsDiv.appendChild(editBtn);
+
+            // Delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'action-btn delete';
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.addEventListener('click', (event) => {
+              event.stopPropagation(); // Prevent chat item selection
+              deleteChatItem(item.id);
+            });
+            actionsDiv.appendChild(deleteBtn);
+
+            itemDiv.appendChild(actionsDiv);
+
+
+            // If no chat is selected, select the first one by default
+            if (selectedChatId === null && index === 0) {
+              selectedChatId = item.id;
+              itemDiv.classList.add('selected');
+            } else if (selectedChatId === item.id) {
+              itemDiv.classList.add('selected');
+            }
+
+            // Add click event to select item
+            itemDiv.addEventListener('click', () => {
+              selectedChatId = item.id;
+              updateSelectedUI();
+            });
+
+            chatContainer.appendChild(itemDiv);
+          });
+          updateSelectedUI();
+        }
+      };
+    }
+    
+    // Update UI for selected chat item
+    function updateSelectedUI() {
+      const chatItems = document.querySelectorAll('.chat-item');
+      chatItems.forEach(item => {
+        if (parseInt(item.dataset.id, 10) === selectedChatId) {
+          item.classList.add('selected');
+        } else {
+          item.classList.remove('selected');
+        }
+      });
+    }
+    
+    //move to top
+    function movetotop(id1) {
+  const request = indexedDB.open("ChatDB");
+
+  request.onsuccess = function(event) {
+    const db = event.target.result;
+    const tx = db.transaction("chats", "readwrite");
+    const store = tx.objectStore("chats");
+
+    const getAllReq = store.getAll();
+
+    getAllReq.onsuccess = function() {
+      let chats = getAllReq.result;
+
+      // Find the object with id = id1
+      const index = chats.findIndex(chat => chat.id === id1);
+      if (index === -1) {
+        console.error(`Item with id ${id1} not found`);
+        return;
+      }
+
+      const itemToMove = chats.splice(index, 1)[0];
+      chats.unshift(itemToMove);
+
+      // Reassign IDs
+      chats = chats.map((chat, idx) => ({
+        ...chat,
+        id: idx + 1
+      }));
+
+      // Clear and rewrite updated data
+      store.clear().onsuccess = function() {
+        let addCount = 0;
+        chats.forEach(chat => {
+          const addRequest = store.add(chat);
+          addRequest.onsuccess = function() {
+            addCount++;
+            // When all items are added, transaction will complete
+          };
+        });
+      };
+    };
+
+    tx.oncomplete = function() {
+      // Only call loadChatItems after everything is committed
+      loadChatItems();
+      selectedChatId =1;
+      updateSelectedUI();
+    };
+
+    tx.onerror = function(event) {
+      console.error("Transaction failed:", event.target.error);
+    };
+  };
+
+  request.onerror = function(event) {
+    console.error("Database open error:", event.target.error);
+  };
+};
+    
+
+    // ---------------------------
+    // Modal Functionality
+    // ---------------------------
+    const modal = document.getElementById("myModal");
+    const modal2 = document.getElementById("myModal2");
+    const preBtn = document.getElementById("pre-btn");
+    const resBtn = document.getElementById("res-btn");
+    const newBtn = document.getElementById("new-btn");
+    const closeModal = document.getElementsByClassName("close")[0];
+    const closeModal2 = document.getElementsByClassName("close")[1];
+    const modalTitleInput = document.getElementById("modal-title");
+    const modalPromptInput = document.getElementById("modal-prompt");
+    const addBtnModal = document.getElementById("add-btn");
+    const copy__click = document.getElementById("copy_click");
+    const result_text = document.getElementById("result_text");
+
+    preBtn.onclick = function() {
+      document.getElementById("chat-input").value=previous;
